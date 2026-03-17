@@ -7,12 +7,16 @@ class FlowerCard extends StatelessWidget {
   final Flower flower;
   final VoidCallback? onTap;
   final VoidCallback? onAddToCart;
+  final VoidCallback? onToggleFavorite;
+  final bool isFavorite;
 
   const FlowerCard({
     super.key,
     required this.flower,
     this.onTap,
     this.onAddToCart,
+    this.onToggleFavorite,
+    this.isFavorite = false,
   });
 
   static final _priceFormat = NumberFormat('#,###', 'vi_VN');
@@ -25,6 +29,10 @@ class FlowerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final flowerColor = FlowerColors.getColor(flower.color);
     final hasDiscount = flower.discountPercent > 0;
+    final soldCount = ((flower.id * 137) % 3200) + 150;
+    final soldText = soldCount >= 1000
+        ? 'Đã bán ${(soldCount / 1000).toStringAsFixed(1)}k'
+        : 'Đã bán $soldCount';
 
     return GestureDetector(
       onTap: onTap,
@@ -114,10 +122,16 @@ class FlowerCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.favorite_border,
-                        size: 18,
-                        color: Colors.grey.shade400,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: onToggleFavorite,
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          size: 18,
+                          color: isFavorite
+                              ? const Color(0xFFE53935)
+                              : Colors.grey.shade400,
+                        ),
                       ),
                     ),
                   ),
@@ -131,24 +145,26 @@ class FlowerCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Danh mục
-                  Text(
-                    flower.category,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: flowerColor,
-                      letterSpacing: 0.5,
-                    ),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildTag('Mall', const Color(0xFFEE4D2D)),
+                      if (hasDiscount)
+                        _buildTag(
+                          'Giảm ${flower.discountPercent}%',
+                          const Color(0xFFE53935),
+                        )
+                      else
+                        _buildTag('Yêu thích', const Color(0xFF1E88E5)),
+                    ],
                   ),
 
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 6),
 
-                  // Tên hoa
                   Text(
                     flower.name,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 14,
@@ -157,17 +173,14 @@ class FlowerCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
 
-                  // Mô tả
                   Text(
-                    flower.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    soldText,
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
-                      height: 1.3,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
 
@@ -230,6 +243,24 @@ class FlowerCard extends StatelessWidget {
   }
 
   static const Color primaryPink = Color(0xFFE91E63);
+
+  Widget _buildTag(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
 
   Widget _placeholder(Color color) {
     return Container(

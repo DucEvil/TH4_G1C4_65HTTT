@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/flower_model.dart';
 import '../constants/flower_colors.dart';
 import '../services/cart_service.dart';
+import '../services/favorite_service.dart';
 
 class FlowerDetailScreen extends StatelessWidget {
   final Flower flower;
@@ -28,6 +29,7 @@ class FlowerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final favoriteService = FavoriteService.instance;
     final flowerColor = FlowerColors.getColor(flower.color);
     final hasDiscount = flower.discountPercent > 0;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -43,10 +45,27 @@ class FlowerDetailScreen extends StatelessWidget {
             backgroundColor: flowerColor,
             foregroundColor: Colors.white,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.favorite_border),
-                onPressed: () =>
-                    _showSnackBar(context, 'Đã thêm vào yêu thích'),
+              ValueListenableBuilder<Set<int>>(
+                valueListenable: favoriteService.favoriteIds,
+                builder: (context, ids, _) {
+                  final isFavorite = ids.contains(flower.id);
+                  return IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                    ),
+                    onPressed: () async {
+                      final isNowFavorite = await favoriteService
+                          .toggleFavorite(flower.id);
+                      if (!context.mounted) return;
+                      _showSnackBar(
+                        context,
+                        isNowFavorite
+                            ? 'Đã thêm vào yêu thích'
+                            : 'Đã bỏ khỏi yêu thích',
+                      );
+                    },
+                  );
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.share),
