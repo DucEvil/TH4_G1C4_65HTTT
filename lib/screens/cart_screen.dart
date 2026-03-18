@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/cart_item.dart';
 import '../services/cart_service.dart';
+import 'checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -144,11 +145,24 @@ class CartScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 48,
                       child: FilledButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          final isPaid = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CheckoutScreen(
+                                cartItems: List<CartItem>.from(cartItems),
+                              ),
+                            ),
+                          );
+
+                          if (!context.mounted || isPaid != true) {
+                            return;
+                          }
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text(
-                                'Chức năng thanh toán đang phát triển',
+                                'Đặt hàng thành công. Cảm ơn bạn đã mua hoa!',
                               ),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
