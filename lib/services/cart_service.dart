@@ -46,4 +46,11 @@ class CartService {
   void clearCart() {
     items.value = [];
   }
+
+  void removeItemsByFlowerIds(List<int> flowerIds) {
+    final setIds = flowerIds.toSet();
+    final list = List<CartItem>.from(items.value);
+    list.removeWhere((item) => setIds.contains(item.flower.id));
+    items.value = list;
+  }
 }

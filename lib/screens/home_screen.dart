@@ -7,6 +7,7 @@ import '../widgets/error_widget.dart';
 import '../screens/flower_detail_screen.dart';
 import '../screens/flower_search_delegate.dart';
 import '../screens/cart_screen.dart';
+import '../screens/order_history_screen.dart';
 import '../config/api_config.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -66,11 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: _currentIndex == 0
-          ? _buildShopBody(primaryColor, theme)
-          : _currentIndex == 2
-          ? const CartScreen()
-          : _buildPlaceholderPage(_getPageInfo(_currentIndex)),
+      body: _buildPageBody(primaryColor, theme),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -106,13 +103,31 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Yêu thích',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Tài khoản',
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Đơn mua',
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPageBody(Color primaryColor, ThemeData theme) {
+    if (_currentIndex == 0) {
+      return _buildShopBody(primaryColor, theme);
+    }
+    if (_currentIndex == 2) {
+      return CartScreen(
+        onOrderPlaced: () {
+          setState(() => _currentIndex = 0);
+          _showSnackBar('Đặt hàng thành công');
+        },
+      );
+    }
+    if (_currentIndex == 4) {
+      return const OrderHistoryScreen();
+    }
+    return _buildPlaceholderPage(_getPageInfo(_currentIndex));
   }
 
   Widget _buildShopBody(Color primaryColor, ThemeData theme) {
@@ -459,7 +474,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return (Icons.favorite, 'Yêu thích', 'Chưa có sản phẩm yêu thích');
       case 4:
-        return (Icons.person, 'Tài khoản', 'Đăng nhập để tiếp tục');
+        return (Icons.receipt_long, 'Đơn mua', 'Lịch sử đơn hàng của bạn');
       default:
         return (Icons.home, 'Trang chủ', '');
     }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../models/cart_item.dart';
 import '../models/flower_model.dart';
 import '../constants/flower_colors.dart';
 import '../services/cart_service.dart';
+import '../services/order_service.dart';
+import 'checkout_screen.dart';
 
 class FlowerDetailScreen extends StatelessWidget {
   final Flower flower;
@@ -366,12 +369,22 @@ class FlowerDetailScreen extends StatelessWidget {
               child: SizedBox(
                 height: 48,
                 child: FilledButton(
-                  onPressed: () {
-                    CartService.instance.addToCart(flower);
-                    _showSnackBar(
+                  onPressed: () async {
+                    final result = await Navigator.push<CheckoutResult>(
                       context,
-                      'Đã thêm ${flower.name} vào giỏ hàng',
+                      MaterialPageRoute(
+                        builder: (_) => CheckoutScreen(
+                          selectedItems: [CartItem(flower: flower, quantity: 1)],
+                        ),
+                      ),
                     );
+
+                    if (!context.mounted || result == null) {
+                      return;
+                    }
+
+                    OrderService.instance.addOrder(result.order);
+                    _showSnackBar(context, 'Đặt hàng thành công');
                     Navigator.pop(context);
                   },
                   style: FilledButton.styleFrom(

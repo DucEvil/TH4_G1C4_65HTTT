@@ -1,6 +1,6 @@
 import 'dart:math';
 
-enum PaymentMethod { cod, bankTransfer, eWallet }
+enum PaymentMethod { cod, momo }
 
 class CheckoutRequest {
   final String customerName;
@@ -9,8 +9,6 @@ class CheckoutRequest {
   final String? note;
   final PaymentMethod paymentMethod;
   final double subtotal;
-  final double shippingFee;
-  final double discount;
 
   const CheckoutRequest({
     required this.customerName,
@@ -19,11 +17,9 @@ class CheckoutRequest {
     this.note,
     required this.paymentMethod,
     required this.subtotal,
-    required this.shippingFee,
-    required this.discount,
   });
 
-  double get totalAmount => subtotal + shippingFee - discount;
+  double get totalAmount => subtotal;
 }
 
 class PaymentResult {
@@ -59,14 +55,6 @@ class PaymentService {
       return const PaymentResult(
         isSuccess: false,
         message: 'Tổng thanh toán không hợp lệ.',
-        orderCode: '',
-      );
-    }
-
-    if (request.paymentMethod != PaymentMethod.cod) {
-      return const PaymentResult(
-        isSuccess: false,
-        message: 'Hệ thống hiện chỉ hỗ trợ thanh toán COD.',
         orderCode: '',
       );
     }
