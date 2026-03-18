@@ -278,7 +278,7 @@ class ProductDetailScreen extends StatelessWidget {
                       ),
                       _infoChip(
                         Icons.verified,
-                        'Cam ket hang chinh hang',
+                        'Cam kết hàng chính hãng',
                         Colors.green,
                       ),
                     ],
@@ -304,13 +304,13 @@ class ProductDetailScreen extends StatelessWidget {
                         _deliveryRow(
                           Icons.replay,
                           'Đổi trả miễn phí',
-                          'Trong vong 24h neu san pham loi',
+                          'Trong vòng 24h nếu sản phẩm lỗi',
                         ),
                         const Divider(height: 20),
                         _deliveryRow(
                           Icons.verified_user_outlined,
                           'Bảo đảm chất lượng',
-                          'San pham tươi 100% từ vườn',
+                          'Sản phẩm tươi 100% từ vườn',
                         ),
                       ],
                     ),

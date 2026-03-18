@@ -58,7 +58,7 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
           onPressed: () {
             _minPrice = null;
             _maxPrice = null;
-            showSuggestions(context);
+            _refreshSearch();
           },
         ),
       if (query.isNotEmpty)
@@ -85,14 +85,19 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
   }
 
   Widget _buildSearchResults(BuildContext context) {
+    final queryPrice = _parsePriceFromQuery(query);
+    final effectiveMin = _effectiveMin(queryPrice.min);
+    final effectiveMax = _effectiveMax(queryPrice.max);
+    final textQuery = queryPrice.cleanedQuery.toLowerCase();
+
     final results = products.where((f) {
-      final queryMatch = query.isEmpty
+      final queryMatch = textQuery.isEmpty
           ? true
-          : f.name.toLowerCase().contains(query.toLowerCase()) ||
-                f.description.toLowerCase().contains(query.toLowerCase()) ||
-                f.category.toLowerCase().contains(query.toLowerCase()) ||
-                f.color.toLowerCase().contains(query.toLowerCase());
-      return queryMatch && _matchesPrice(f.price);
+          : f.name.toLowerCase().contains(textQuery) ||
+                f.description.toLowerCase().contains(textQuery) ||
+                f.category.toLowerCase().contains(textQuery) ||
+                f.color.toLowerCase().contains(textQuery);
+      return queryMatch && _matchesPrice(f.price, effectiveMin, effectiveMax);
     }).toList();
 
     if (results.isEmpty) {
@@ -246,10 +251,64 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
 
   bool get _hasPriceFilter => _minPrice != null || _maxPrice != null;
 
-  bool _matchesPrice(double price) {
-    if (_minPrice != null && price < _minPrice!) return false;
-    if (_maxPrice != null && price > _maxPrice!) return false;
+  bool _matchesPrice(double price, double? min, double? max) {
+    if (min != null && price < min) return false;
+    if (max != null && price > max) return false;
     return true;
+  }
+
+  double? _effectiveMin(double? queryMin) {
+    if (_minPrice == null) return queryMin;
+    if (queryMin == null) return _minPrice;
+    return _minPrice! > queryMin ? _minPrice : queryMin;
+  }
+
+  double? _effectiveMax(double? queryMax) {
+    if (_maxPrice == null) return queryMax;
+    if (queryMax == null) return _maxPrice;
+    return _maxPrice! < queryMax ? _maxPrice : queryMax;
+  }
+
+  ({double? min, double? max, String cleanedQuery}) _parsePriceFromQuery(
+    String raw,
+  ) {
+    var cleaned = raw;
+    double? min;
+    double? max;
+
+    final range = RegExp(
+      r'(?:gia|price)\s*:\s*(\d+)\s*[-~]\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(raw);
+    if (range != null) {
+      final a = double.tryParse(range.group(1)!);
+      final b = double.tryParse(range.group(2)!);
+      if (a != null && b != null) {
+        min = a < b ? a : b;
+        max = a < b ? b : a;
+        cleaned = cleaned.replaceFirst(range.group(0)!, '').trim();
+      }
+    }
+
+    final minOnly = RegExp(
+      r'(?:gia|price)\s*:\s*(\d+)\s*\+',
+      caseSensitive: false,
+    ).firstMatch(cleaned);
+    if (minOnly != null) {
+      min = double.tryParse(minOnly.group(1)!);
+      cleaned = cleaned.replaceFirst(minOnly.group(0)!, '').trim();
+    }
+
+    final maxOnly = RegExp(
+      r'(?:gia|price)\s*:\s*<\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(cleaned);
+    if (maxOnly != null) {
+      max = double.tryParse(maxOnly.group(1)!);
+      cleaned = cleaned.replaceFirst(maxOnly.group(0)!, '').trim();
+    }
+
+    return (min: min, max: max, cleanedQuery: cleaned);
   }
 
   String get _emptyMessage {
@@ -260,6 +319,13 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
       return 'Không tìm thấy "$query" trong khoảng giá đã chọn';
     }
     return 'Không tìm thấy "$query"';
+  }
+
+  void _refreshSearch() {
+    // Force SearchDelegate to rebuild even when query text stays the same.
+    final current = query;
+    query = '$current ';
+    query = current;
   }
 
   Future<void> _showPriceFilter(BuildContext context) async {
@@ -286,15 +352,20 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                ...ranges.map(
-                  (range) => ListTile(
+                ...ranges.map((range) {
+                  final selectedRange =
+                      _minPrice == range.min && _maxPrice == range.max;
+                  return ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(range.label),
+                    trailing: selectedRange
+                        ? const Icon(Icons.check, color: _primaryPink)
+                        : null,
                     onTap: () {
                       Navigator.pop(context, (min: range.min, max: range.max));
                     },
-                  ),
-                ),
+                  );
+                }),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Bỏ lọc giá'),
@@ -309,14 +380,9 @@ class ProductSearchDelegate extends SearchDelegate<Product?> {
     );
 
     if (selected != null) {
-      if (!context.mounted) return;
       _minPrice = selected.min;
       _maxPrice = selected.max;
-      showSuggestions(context);
+      _refreshSearch();
     }
   }
 }
-
-
-
-

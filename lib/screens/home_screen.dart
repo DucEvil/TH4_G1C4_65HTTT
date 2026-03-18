@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<_BannerItem> _banners = const [
     _BannerItem(
       title: 'Flash Sale 3h',
-      subtitle: 'Deal dong gia cho my pham va phu kien hot',
+      subtitle: 'Deal đồng giá cho mỹ phẩm, thời trang, đồ gia dụng...',
       badge: 'Siêu ưu đãi',
       icon: Icons.local_offer,
       colors: [Color(0xFFE75A7C), Color(0xFFF48FB1)],
@@ -53,14 +53,14 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     _BannerItem(
       title: 'Mall Chính Hãng',
-      subtitle: 'Dien thoai va do gia dung cam ket chinh hang',
+      subtitle: 'Điện thoại và đồ gia dụng cam kết chính hãng',
       badge: 'Mall',
       icon: Icons.verified,
       colors: [Color(0xFF00897B), Color(0xFF4DB6AC)],
     ),
     _BannerItem(
-      title: 'Voucher Cuoi Tuan',
-      subtitle: 'Thu ma giam gia va hoan xu cho moi don hang',
+      title: 'Voucher Cuối Tuần',
+      subtitle: 'Thu mã giảm giá và hoàn xu cho mỗi đơn hàng',
       badge: 'Hot deal',
       icon: Icons.celebration,
       colors: [Color(0xFFFF7043), Color(0xFFFFAB91)],
@@ -75,22 +75,22 @@ class _HomeScreenState extends State<HomeScreen> {
       filterKey: 'Tất cả',
     ),
     _HomeCategoryItem(
-      label: 'Trang tri',
+      label: 'Trang trí',
       icon: Icons.local_florist_rounded,
       color: Color(0xFF43A047),
       filterKey: 'TRANG_TRI',
     ),
     _HomeCategoryItem(
-      label: 'Thuc pham',
+      label: 'Thực phẩm',
       icon: Icons.flight_takeoff_rounded,
       color: Color(0xFF5E35B1),
       filterKey: 'THUC_PHAM',
     ),
     _HomeCategoryItem(
-      label: 'Giỏ quà',
+      label: 'Phụ kiện',
       icon: Icons.card_giftcard_rounded,
       color: Color(0xFFF4511E),
-      filterKey: 'GIO_QUA',
+      filterKey: 'PHU_KIEN',
     ),
     _HomeCategoryItem(
       label: 'Mỹ phẩm',
@@ -105,10 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
       filterKey: 'DIEN_THOAI',
     ),
     _HomeCategoryItem(
-      label: 'Nhà cửa',
+      label: 'Đồ dùng',
       icon: Icons.chair_rounded,
       color: Color(0xFF6D4C41),
-      filterKey: 'NHA_CUA',
+      filterKey: 'DO_DUNG',
     ),
     _HomeCategoryItem(
       label: 'Voucher',
@@ -205,10 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (categoryKey) {
       case 'TRANG_TRI':
       case 'THUC_PHAM':
-      case 'GIO_QUA':
+      case 'PHU_KIEN':
       case 'MY_PHAM':
       case 'DIEN_THOAI':
-      case 'NHA_CUA':
+      case 'DO_DUNG':
       case 'VOUCHER':
         return product.category == categoryKey;
       default:
@@ -239,23 +239,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String get _priceFilterHint {
     if (_minPrice == null && _maxPrice == null) {
-      return 'Tim kiem san pham, qua tang...';
+      return 'Tìm kiếm sản phẩm, quà tặng...';
     }
     if (_minPrice == null) {
-      return 'Gia duoi ${_maxPrice!.toInt()}d';
+      return 'Giá dưới ${_maxPrice!.toInt()}đ';
     }
     if (_maxPrice == null) {
-      return 'Gia tren ${_minPrice!.toInt()}d';
+      return 'Giá trên ${_minPrice!.toInt()}đ';
     }
-    return 'Gia ${_minPrice!.toInt()}d - ${_maxPrice!.toInt()}d';
+    return 'Giá ${_minPrice!.toInt()}đ - ${_maxPrice!.toInt()}đ';
   }
 
   Future<void> _showHomePriceFilter() async {
     final ranges = <({String label, double? min, double? max})>[
-      (label: 'Duoi 200.000d', min: null, max: 200000),
-      (label: '200.000d - 1.000.000d', min: 200000, max: 1000000),
-      (label: '1.000.000d - 5.000.000d', min: 1000000, max: 5000000),
-      (label: 'Tren 5.000.000d', min: 5000000, max: null),
+      (label: 'Dưới 200.000đ', min: null, max: 200000),
+      (label: '200.000đ - 1.000.000đ', min: 200000, max: 1000000),
+      (label: '1.000.000đ - 5.000.000đ', min: 1000000, max: 5000000),
+      (label: 'Trên 5.000.000đ', min: 5000000, max: null),
     ];
 
     final selected = await showModalBottomSheet<({double? min, double? max})>(
@@ -270,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Loc theo khoang gia',
+                  'Lọc theo khoảng giá',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -286,7 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.filter_alt_off_outlined),
-                  title: const Text('Bo loc gia'),
+                  title: const Text('Bỏ lọc giá'),
                   onTap: () => Navigator.pop(context, (min: null, max: null)),
                 ),
               ],
@@ -385,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Đang tải dữ liệu san pham...',
+                  'Đang tải dữ liệu sản phẩm...',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -888,16 +888,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         SizedBox(
-          height: 184,
+          height: 204,
           child: GridView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            physics: const NeverScrollableScrollPhysics(),
+            clipBehavior: Clip.none,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
             itemCount: _homeCategories.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: 4,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 1.02,
+              childAspectRatio: 0.9,
             ),
             itemBuilder: (context, index) {
               final item = _homeCategories[index];
@@ -920,11 +921,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isSelected
+                        ? item.color.withValues(alpha: 0.08)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isSelected ? item.color : Colors.grey.shade200,
-                      width: isSelected ? 1.6 : 1,
+                      width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(

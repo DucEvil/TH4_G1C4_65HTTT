@@ -9,7 +9,7 @@ class ProductService {
   static const String baseUrl = 'https://jsonplaceholder.typicode.com';
   static const String _dummyProductApi = 'https://dummyjson.com/products';
 
-  // Map san pham mock (id local) -> san pham that tren DummyJSON (id API).
+  // Map sản phẩm mock (id local) -> sản phẩm thật trên DummyJSON (id API).
   static const Map<int, int> _mockProductImageIds = {
     1: 45,
     2: 46,
@@ -78,7 +78,7 @@ class ProductService {
     return updated;
   }
 
-  /// Fetch danh sách san pham + gọi Wikipedia API lấy ảnh
+  /// Fetch danh sách sản phẩm và bổ sung ảnh từ DummyJSON.
   static Future<List<Product>> fetchProducts() async {
     try {
       if (ApiConfig.simulatedDelay > 0) {
@@ -121,7 +121,7 @@ class ProductService {
     }
   }
 
-  /// Gọi JSONPlaceholder API rồi transform thành Product
+  /// Gọi JSONPlaceholder API rồi transform thành Product.
   static Future<List<Product>> _fetchFromApi() async {
     try {
       final response = await http
@@ -138,7 +138,7 @@ class ProductService {
             name: _productNames[id % _productNames.length],
             description: item['body'] as String,
             price: (20000 + id * 5000).toDouble(),
-            image: '', // Sẽ được cập nhật bởi Wikipedia API
+            image: '', // Sẽ được cập nhật bởi DummyJSON API
             color: _productColors[id % _productColors.length],
             quantity: 10 + id * 5,
             category: _productCategories[id % _productCategories.length],
@@ -151,33 +151,33 @@ class ProductService {
       }
     } catch (e) {
       throw Exception(
-        'Lỗi kết nối API: Khong the tai danh sach san pham từ máy chủ. '
+        'Lỗi kết nối API: Không thể tải dữ liệu sản phẩm. '
         'Vui lòng kiểm tra kết nối Internet và thử lại. Chi tiết: $e',
       );
     }
   }
 
   static const List<String> _productNames = [
-    'San pham Hồng',
-    'San pham Tulip',
-    'San pham Lan Hồ Điệp',
-    'San pham Cúc',
-    'San pham Hướng Dương',
-    'San pham Tú Cầu',
-    'San pham Cẩm Chướng',
-    'San pham Lily',
-    'San pham Mẫu Đơn',
-    'San pham Oải Hương',
-    'San pham Đồng Tiền',
-    'San pham Thược Dược',
-    'San pham Anh Đào',
-    'San pham Sen',
-    'San pham Sứ',
-    'San pham Hải Đường',
-    'San pham Iris',
-    'San pham Cúc Vạn Thọ',
-    'San pham Bỉ Ngạn',
-    'San pham Trạng Nguyên',
+    'Sản phẩm gia dụng',
+    'Sản phẩm thời trang',
+    'Sản phẩm làm đẹp',
+    'Sản phẩm công nghệ',
+    'Sản phẩm nhà bếp',
+    'Sản phẩm thể thao',
+    'Sản phẩm chăm sóc cá nhân',
+    'Sản phẩm sức khỏe',
+    'Sản phẩm văn phòng',
+    'Sản phẩm du lịch',
+    'Sản phẩm học tập',
+    'Sản phẩm phụ kiện',
+    'Sản phẩm trang trí',
+    'Sản phẩm quà tặng',
+    'Sản phẩm tiện ích',
+    'Sản phẩm điện tử',
+    'Sản phẩm nhà cửa',
+    'Sản phẩm bền vững',
+    'Sản phẩm cao cấp',
+    'Sản phẩm khuyến mãi',
   ];
 
   static const List<String> _productColors = [
@@ -193,7 +193,3 @@ class ProductService {
 
   static const List<String> _productCategories = ['TRANG_TRI', 'THUC_PHAM'];
 }
-
-
-
-
