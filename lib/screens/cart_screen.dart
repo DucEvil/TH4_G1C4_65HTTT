@@ -1,13 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/cart_item.dart';
 import '../services/cart_service.dart';
+import '../services/order_service.dart';
+import 'checkout_screen.dart';
 
-class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+class CartScreen extends StatefulWidget {
+  final VoidCallback? onOrderPlaced;
 
+  const CartScreen({super.key, this.onOrderPlaced});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
   static const _primaryPink = Color(0xFFE91E63);
   static final _priceFormat = NumberFormat('#,###', 'vi_VN');
+
+  final Set<int> _selectedFlowerIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    CartService.instance.items.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    CartService.instance.items.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    final currentIds = CartService.instance.items.value
+        .map((item) => item.flower.id)
+        .toSet();
+    _selectedFlowerIds.removeWhere((id) => !currentIds.contains(id));
+  }
 
   String _formatPrice(double price) {
     return '${_priceFormat.format(price.toInt())}đ';
@@ -18,6 +49,16 @@ class CartScreen extends StatelessWidget {
     return ValueListenableBuilder<List<CartItem>>(
       valueListenable: CartService.instance.items,
       builder: (context, cartItems, _) {
+        final selectedItems = cartItems
+            .where((item) => _selectedFlowerIds.contains(item.flower.id))
+            .toList();
+        final selectedTotal = selectedItems.fold(
+          0.0,
+          (sum, item) => sum + item.totalPrice,
+        );
+        final isAllSelected =
+            cartItems.isNotEmpty && selectedItems.length == cartItems.length;
+
         if (cartItems.isEmpty) {
           return Center(
             child: Column(
@@ -51,22 +92,39 @@ class CartScreen extends StatelessWidget {
 
         return Column(
           children: [
-            // App bar
             Container(
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 8,
-                left: 16,
+                left: 10,
                 right: 16,
                 bottom: 12,
               ),
               color: _primaryPink,
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.shopping_cart,
-                    color: Colors.white,
-                    size: 22,
+                  Checkbox(
+                    value: isAllSelected,
+                    onChanged: (_) {
+                      setState(() {
+                        if (isAllSelected) {
+                          _selectedFlowerIds.clear();
+                        } else {
+                          _selectedFlowerIds
+                            ..clear()
+                            ..addAll(cartItems.map((item) => item.flower.id));
+                        }
+                      });
+                    },
+                    side: const BorderSide(color: Colors.white70),
+                    checkColor: _primaryPink,
+                    fillColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return Colors.transparent;
+                    }),
                   ),
+                  const Icon(Icons.shopping_cart, color: Colors.white, size: 22),
                   const SizedBox(width: 10),
                   Text(
                     'Giỏ hàng (${cart.totalItems})',
@@ -78,9 +136,7 @@ class CartScreen extends StatelessWidget {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () {
-                      _showClearConfirm(context);
-                    },
+                    onPressed: () => _showClearConfirm(context),
                     child: const Text(
                       'Xóa tất cả',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -89,21 +145,30 @@ class CartScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Cart items list
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 itemCount: cartItems.length,
-                separatorBuilder: (_, i) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final item = cartItems[index];
-                  return _buildCartItem(context, item);
+                  return _buildCartItem(
+                    context,
+                    item,
+                    isSelected: _selectedFlowerIds.contains(item.flower.id),
+                    onSelectChanged: (isSelected) {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedFlowerIds.add(item.flower.id);
+                        } else {
+                          _selectedFlowerIds.remove(item.flower.id);
+                        }
+                      });
+                    },
+                  );
                 },
               ),
             ),
-
-            // Bottom total + checkout
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
@@ -124,13 +189,10 @@ class CartScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Tổng cộng',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                       ),
                       Text(
-                        _formatPrice(cart.totalPrice),
+                        _formatPrice(selectedTotal),
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -144,18 +206,50 @@ class CartScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 48,
                       child: FilledButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                'Chức năng thanh toán đang phát triển',
+                        onPressed: () async {
+                          if (selectedItems.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  'Vui lòng tick sản phẩm để thanh toán',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                            );
+                            return;
+                          }
+
+                          final result = await Navigator.push<CheckoutResult>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CheckoutScreen(
+                                selectedItems: selectedItems
+                                    .map(
+                                      (item) => CartItem(
+                                        flower: item.flower,
+                                        quantity: item.quantity,
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ),
                           );
+
+                          if (!context.mounted || result == null) {
+                            return;
+                          }
+
+                          OrderService.instance.addOrder(result.order);
+                          CartService.instance.removeItemsByFlowerIds(
+                            result.purchasedFlowerIds,
+                          );
+                          setState(() {
+                            _selectedFlowerIds.removeAll(result.purchasedFlowerIds);
+                          });
+                          widget.onOrderPlaced?.call();
                         },
                         style: FilledButton.styleFrom(
                           backgroundColor: _primaryPink,
@@ -182,7 +276,12 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCartItem(BuildContext context, CartItem item) {
+  Widget _buildCartItem(
+    BuildContext context,
+    CartItem item, {
+    required bool isSelected,
+    required ValueChanged<bool> onSelectChanged,
+  }) {
     final flower = item.flower;
     return Container(
       padding: const EdgeInsets.all(10),
@@ -199,7 +298,11 @@ class CartScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Image
+          Checkbox(
+            value: isSelected,
+            onChanged: (value) => onSelectChanged(value ?? false),
+            activeColor: _primaryPink,
+          ),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
@@ -209,7 +312,7 @@ class CartScreen extends StatelessWidget {
                   ? Image.network(
                       flower.image,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, e, s) => Container(
+                      errorBuilder: (_, __, ___) => Container(
                         color: Colors.pink.shade50,
                         child: const Icon(
                           Icons.local_florist,
@@ -227,7 +330,6 @@ class CartScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +353,6 @@ class CartScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Quantity controls
                 Row(
                   children: [
                     _quantityButton(
@@ -287,7 +388,6 @@ class CartScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Delete button
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.grey.shade400),
             onPressed: () {
