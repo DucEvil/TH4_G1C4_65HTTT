@@ -42,29 +42,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<_BannerItem> _banners = const [
     _BannerItem(
-      title: 'Flash Sale 3h',
-      subtitle: 'Deal đồng giá cho áo thun, jean, hoodie và phụ kiện',
+      title: 'Flash Sale -50%',
+      subtitle: 'Khung 3 giờ: áo thun, jean, hoodie đồng giá từ 99.000đ',
       badge: 'Siêu ưu đãi',
       icon: Icons.local_offer,
       colors: [Color(0xFFE75A7C), Color(0xFFF48FB1)],
     ),
     _BannerItem(
       title: 'FreeShip Toàn Quốc',
-      subtitle: 'Đơn từ 149.000đ, giao nhanh trong ngày',
+      subtitle: 'Miễn phí vận chuyển cho đơn từ 149.000đ',
       badge: 'Freeship',
       icon: Icons.local_shipping,
       colors: [Color(0xFF1E88E5), Color(0xFF64B5F6)],
     ),
     _BannerItem(
-      title: 'Fashion Mall Chính Hãng',
-      subtitle: 'Bộ sưu tập quần áo và giày mới nhất trong tuần',
+      title: 'Voucher 99K Cuối Tuần',
+      subtitle: 'Nhập mã WEEKEND99 giảm trực tiếp 99.000đ',
       badge: 'Mall',
       icon: Icons.verified,
       colors: [Color(0xFF00897B), Color(0xFF4DB6AC)],
     ),
     _BannerItem(
-      title: 'Mix & Match Cuối Tuần',
-      subtitle: 'Mua 2 giảm thêm 10% cho phụ kiện và balo',
+      title: 'Mua 2 Giảm 10%',
+      subtitle: 'Áp dụng cho phụ kiện: túi, nón, ví, đồng hồ',
       badge: 'Hot deal',
       icon: Icons.celebration,
       colors: [Color(0xFFFF7043), Color(0xFFFFAB91)],
