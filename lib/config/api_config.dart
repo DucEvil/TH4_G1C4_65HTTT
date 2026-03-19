@@ -6,8 +6,11 @@ class ApiConfig {
   /// Set to true để sử dụng local mock data thay vì API thực
   static const bool useMockData = true;
 
+  /// Set to true để bỏ qua việc tải ảnh từ Wikipedia (khi không có mạng)
+  static const bool skipWikiImages = true;
+
   /// Delay thêm (milliseconds) để test Loading state
-  static const int simulatedDelay = 2000;
+  static const int simulatedDelay = 0;
 
   /// Thông tin sinh viên - CẬP NHẬT TẠI ĐÂY
   static const String studentName = 'Đỗ Đình Đức';

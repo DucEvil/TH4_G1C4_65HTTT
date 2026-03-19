@@ -20,6 +20,8 @@ class _CartScreenState extends State<CartScreen> {
   static final _priceFormat = NumberFormat('#,###', 'vi_VN');
 
   final Set<int> _selectedFlowerIds = {};
+  String _selectedCategory = 'Tất cả';
+  final List<String> _categories = ['Tất cả', 'HOA TƯƠI', 'HOA NHẬP KHẨU'];
 
   @override
   void initState() {
@@ -49,7 +51,12 @@ class _CartScreenState extends State<CartScreen> {
     return ValueListenableBuilder<List<CartItem>>(
       valueListenable: CartService.instance.items,
       builder: (context, cartItems, _) {
-        final selectedItems = cartItems
+        // Filter items by selected category
+        final filteredCartItems = _selectedCategory == 'Tất cả'
+            ? cartItems
+            : cartItems.where((item) => item.flower.category == _selectedCategory).toList();
+            
+        final selectedItems = filteredCartItems
             .where((item) => _selectedFlowerIds.contains(item.flower.id))
             .toList();
         final selectedTotal = selectedItems.fold(
@@ -57,9 +64,9 @@ class _CartScreenState extends State<CartScreen> {
           (sum, item) => sum + item.totalPrice,
         );
         final isAllSelected =
-            cartItems.isNotEmpty && selectedItems.length == cartItems.length;
+            filteredCartItems.isNotEmpty && selectedItems.length == filteredCartItems.length;
 
-        if (cartItems.isEmpty) {
+        if (filteredCartItems.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -71,7 +78,7 @@ class _CartScreenState extends State<CartScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Giỏ hàng trống',
+                  _selectedCategory == 'Tất cả' ? 'Giỏ hàng trống' : 'Không có sản phẩm trong danh mục này',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -80,15 +87,13 @@ class _CartScreenState extends State<CartScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Hãy thêm hoa vào giỏ hàng nhé!',
+                  _selectedCategory == 'Tất cả' ? 'Hãy thêm hoa vào giỏ hàng nhé!' : 'Thử chọn danh mục khác',
                   style: TextStyle(color: Colors.grey.shade400),
                 ),
               ],
             ),
           );
         }
-
-        final cart = CartService.instance;
 
         return Column(
           children: [
@@ -111,7 +116,7 @@ class _CartScreenState extends State<CartScreen> {
                         } else {
                           _selectedFlowerIds
                             ..clear()
-                            ..addAll(cartItems.map((item) => item.flower.id));
+                            ..addAll(filteredCartItems.map((item) => item.flower.id));
                         }
                       });
                     },
@@ -127,7 +132,7 @@ class _CartScreenState extends State<CartScreen> {
                   const Icon(Icons.shopping_cart, color: Colors.white, size: 22),
                   const SizedBox(width: 10),
                   Text(
-                    'Giỏ hàng (${cart.totalItems})',
+                    'Giỏ hàng (${filteredCartItems.length})',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -145,13 +150,46 @@ class _CartScreenState extends State<CartScreen> {
                 ],
               ),
             ),
+            // Category filter chips
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, index) {
+                  final category = _categories[index];
+                  final isSelected = category == _selectedCategory;
+                  return FilterChip(
+                    selected: isSelected,
+                    label: Text(category),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                    ),
+                    selectedColor: _primaryPink,
+                    backgroundColor: Colors.white,
+                    checkmarkColor: Colors.white,
+                    side: BorderSide(
+                      color: isSelected ? _primaryPink : Colors.grey.shade300,
+                    ),
+                    onSelected: (_) {
+                      setState(() => _selectedCategory = category);
+                    },
+                  );
+                },
+              ),
+            ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: cartItems.length,
+                itemCount: filteredCartItems.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
-                  final item = cartItems[index];
+                  final item = filteredCartItems[index];
                   return _buildCartItem(
                     context,
                     item,
@@ -283,128 +321,185 @@ class _CartScreenState extends State<CartScreen> {
     required ValueChanged<bool> onSelectChanged,
   }) {
     final flower = item.flower;
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Dismissible(
+      key: Key('cart_item_${flower.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
-      child: Row(
-        children: [
-          Checkbox(
-            value: isSelected,
-            onChanged: (value) => onSelectChanged(value ?? false),
-            activeColor: _primaryPink,
+      onDismissed: (direction) {
+        CartService.instance.removeFromCart(flower.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã xóa ${flower.name} khỏi giỏ hàng'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            duration: const Duration(seconds: 1),
           ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 80,
-              height: 80,
-              child: flower.image.isNotEmpty
-                  ? Image.network(
-                      flower.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Checkbox(
+              value: isSelected,
+              onChanged: (value) => onSelectChanged(value ?? false),
+              activeColor: _primaryPink,
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: flower.image.isNotEmpty
+                    ? Image.network(
+                        flower.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.pink.shade50,
+                          child: const Icon(
+                            Icons.local_florist,
+                            color: _primaryPink,
+                          ),
+                        ),
+                      )
+                    : Container(
                         color: Colors.pink.shade50,
                         child: const Icon(
                           Icons.local_florist,
                           color: _primaryPink,
                         ),
                       ),
-                    )
-                  : Container(
-                      color: Colors.pink.shade50,
-                      child: const Icon(
-                        Icons.local_florist,
-                        color: _primaryPink,
-                      ),
-                    ),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  flower.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatPrice(flower.price),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: _primaryPink,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _quantityButton(
-                      icon: Icons.remove,
-                      onTap: () {
-                        CartService.instance.updateQuantity(
-                          flower.id,
-                          item.quantity - 1,
-                        );
-                      },
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    flower.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        '${item.quantity}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _primaryPink.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          flower.category,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: _primaryPink,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    _quantityButton(
-                      icon: Icons.add,
-                      onTap: () {
-                        CartService.instance.updateQuantity(
-                          flower.id,
-                          item.quantity + 1,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.grey.shade400),
-            onPressed: () {
-              CartService.instance.removeFromCart(flower.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Đã xóa ${flower.name} khỏi giỏ hàng'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          flower.color,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-        ],
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatPrice(flower.price),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryPink,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _quantityButton(
+                        icon: Icons.remove,
+                        onTap: () {
+                          if (item.quantity > 1) {
+                            CartService.instance.updateQuantity(
+                              flower.id,
+                              item.quantity - 1,
+                            );
+                          } else {
+                            _showDeleteConfirm(context, flower.name, flower.id);
+                          }
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '${item.quantity}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      _quantityButton(
+                        icon: Icons.add,
+                        onTap: () {
+                          CartService.instance.updateQuantity(
+                            flower.id,
+                            item.quantity + 1,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline, color: Colors.grey.shade400),
+              onPressed: () {
+                _showDeleteConfirm(context, flower.name, flower.id);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -423,6 +518,40 @@ class _CartScreenState extends State<CartScreen> {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(icon, size: 16, color: Colors.grey.shade700),
+      ),
+    );
+  }
+
+  void _showDeleteConfirm(BuildContext context, String flowerName, int flowerId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa sản phẩm'),
+        content: Text('Bạn có muốn xóa $flowerName khỏi giỏ hàng?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () {
+              CartService.instance.removeFromCart(flowerId);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Đã xóa $flowerName khỏi giỏ hàng'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: _primaryPink),
+            child: const Text('Xóa'),
+          ),
+        ],
       ),
     );
   }

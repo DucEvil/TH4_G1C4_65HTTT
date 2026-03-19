@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
+// import 'dart:io';
 import '../models/flower_model.dart';
 import '../config/api_config.dart';
 import '../data/mock_flowers.dart';
@@ -107,20 +107,20 @@ class FlowerService {
         );
       }
 
-      // Kiểm tra kết nối mạng thật
-      try {
-        final lookup = await InternetAddress.lookup(
-          'google.com',
-        ).timeout(const Duration(seconds: 3));
-        if (lookup.isEmpty || lookup[0].rawAddress.isEmpty) {
-          throw Exception('Không có kết nối');
-        }
-      } catch (_) {
-        throw Exception(
-          'Lỗi kết nối mạng: Không có kết nối Internet. '
-          'Vui lòng bật WiFi hoặc dữ liệu di động và thử lại.',
-        );
-      }
+      // Bỏ qua kiểm tra kết nối mạng - dùng mock data
+      // try {
+      //   final lookup = await InternetAddress.lookup(
+      //     'google.com',
+      //   ).timeout(const Duration(seconds: 3));
+      //   if (lookup.isEmpty || lookup[0].rawAddress.isEmpty) {
+      //     throw Exception('Không có kết nối');
+      //   }
+      // } catch (_) {
+      //   throw Exception(
+      //     'Lỗi kết nối mạng: Không có kết nối Internet. '
+      //     'Vui lòng bật WiFi hoặc dữ liệu di động và thử lại.',
+      //   );
+      // }
 
       // Lấy danh sách hoa (mock hoặc API)
       List<Flower> flowers;
@@ -142,23 +142,28 @@ class FlowerService {
       }
 
       // Gọi Wikipedia API 1 lần duy nhất cho tất cả 20 hoa
-      final imageMap = await _fetchWikiImages(wikiTitlesToFetch);
+      if (!ApiConfig.skipWikiImages) {
+        final imageMap = await _fetchWikiImages(wikiTitlesToFetch);
 
-      // Cập nhật flowers với ảnh từ Wikipedia
-      final updatedFlowers = flowers.map((flower) {
-        final wikiTitle = nameToWikiTitle[flower.name];
-        if (wikiTitle != null) {
-          // Wikipedia có thể normalize title (VD: Iris_(plant) → Iris (plant))
-          final normalized = wikiTitle.replaceAll('_', ' ');
-          final apiImage = imageMap[wikiTitle] ?? imageMap[normalized];
-          if (apiImage != null && apiImage.isNotEmpty) {
-            return flower.copyWith(image: apiImage);
+        // Cập nhật flowers với ảnh từ Wikipedia
+        final updatedFlowers = flowers.map((flower) {
+          final wikiTitle = nameToWikiTitle[flower.name];
+          if (wikiTitle != null) {
+            // Wikipedia có thể normalize title (VD: Iris_(plant) → Iris (plant))
+            final normalized = wikiTitle.replaceAll('_', ' ');
+            final apiImage = imageMap[wikiTitle] ?? imageMap[normalized];
+            if (apiImage != null && apiImage.isNotEmpty) {
+              return flower.copyWith(image: apiImage);
+            }
           }
-        }
-        return flower;
-      }).toList();
+          return flower;
+        }).toList();
 
-      return updatedFlowers;
+        return updatedFlowers;
+      }
+
+      // Nếu skipWikiImages = true, trả về flowers với ảnh mặc định
+      return flowers;
     } catch (e) {
       throw Exception('Error fetching flowers: $e');
     }
