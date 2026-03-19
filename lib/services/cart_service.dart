@@ -14,12 +14,20 @@ class CartService {
       items.value.fold(0.0, (sum, item) => sum + item.totalPrice);
 
   void addToCart(Flower flower) {
+    addToCartWithQuantity(flower, 1);
+  }
+
+  void addToCartWithQuantity(Flower flower, int quantity) {
+    if (quantity <= 0) {
+      return;
+    }
+
     final list = List<CartItem>.from(items.value);
     final index = list.indexWhere((item) => item.flower.id == flower.id);
     if (index >= 0) {
-      list[index].quantity++;
+      list[index].quantity += quantity;
     } else {
-      list.add(CartItem(flower: flower));
+      list.add(CartItem(flower: flower, quantity: quantity));
     }
     items.value = list;
   }
