@@ -7,75 +7,37 @@ import '../data/mock_products.dart';
 
 class ProductService {
   static const String baseUrl = 'https://jsonplaceholder.typicode.com';
-  static const String _dummyProductApi = 'https://dummyjson.com/products';
+  static const String _fallbackImageApiBase = 'https://picsum.photos/seed/';
 
-  // Map sản phẩm mock (id local) -> sản phẩm thật trên DummyJSON (id API).
-  static const Map<int, int> _mockProductImageIds = {
-    1: 45,
-    2: 46,
-    3: 43,
-    4: 16,
-    5: 40,
-    6: 174,
-    7: 176,
-    8: 175,
-    9: 172,
-    10: 1,
-    11: 4,
-    12: 5,
-    13: 119,
-    14: 133,
-    15: 123,
-    16: 125,
-    17: 130,
-    18: 51,
-    19: 66,
-    20: 76,
-    21: 99,
-    22: 101,
-  };
-
-  static Future<String?> _fetchImageByProductId(int productId) async {
-    final url = Uri.parse('$_dummyProductApi/$productId');
-
-    try {
-      final response = await http.get(url).timeout(const Duration(seconds: 6));
-      if (response.statusCode != 200) return null;
-
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      final thumbnail = data['thumbnail'] as String?;
-      if (thumbnail != null && thumbnail.isNotEmpty) return thumbnail;
-
-      final images = data['images'] as List<dynamic>?;
-      if (images != null && images.isNotEmpty) {
-        final first = images.first as String?;
-        if (first != null && first.isNotEmpty) return first;
-      }
-
-      return null;
-    } catch (_) {
-      return null;
-    }
+  static List<String> _buildFallbackGallery(String productName, int seed) {
+    final encoded = Uri.encodeComponent(productName.toLowerCase());
+    return [
+      '$_fallbackImageApiBase${encoded}_${seed}_1/1200/1200',
+      '$_fallbackImageApiBase${encoded}_${seed}_2/1200/1200',
+      '$_fallbackImageApiBase${encoded}_${seed}_3/1200/1200',
+      '$_fallbackImageApiBase${encoded}_${seed}_4/1200/1200',
+    ];
   }
 
   static Future<List<Product>> _enrichProductsWithImages(
     List<Product> products,
   ) async {
-    final updated = await Future.wait(
-      products.map((product) async {
-        final mappedApiId = _mockProductImageIds[product.id];
-        final apiImage = mappedApiId != null
-            ? await _fetchImageByProductId(mappedApiId)
-            : null;
-        if (apiImage != null && apiImage.isNotEmpty) {
-          return product.copyWith(image: apiImage);
-        }
+    return products.map((product) {
+      final hasImage = product.image.trim().isNotEmpty;
+      final hasGallery = product.imageGallery.isNotEmpty;
 
+      // Keep curated mock images when they already exist.
+      if (hasImage && hasGallery) {
         return product;
-      }),
-    );
+      }
 
-    return updated;
+      final gallery = hasGallery
+          ? product.imageGallery
+          : _buildFallbackGallery(product.name, product.id);
+      final primaryImage = hasImage ? product.image : gallery.first;
+
+      return product.copyWith(image: primaryImage, imageGallery: gallery);
+    }).toList();
   }
 
   /// Fetch danh sách sản phẩm và bổ sung ảnh từ DummyJSON.
@@ -110,7 +72,7 @@ class ProductService {
       // Load product list (mock or API)
       List<Product> products;
       if (ApiConfig.useMockData) {
-        products = MockProductData.getMockProducts();
+        products = mockProducts;
       } else {
         products = await _fetchFromApi();
       }
@@ -144,6 +106,15 @@ class ProductService {
             category: _productCategories[id % _productCategories.length],
             originalPrice: (25000 + id * 5000).toDouble(),
             discountPercent: id % 2 == 0 ? (10 + (id % 30)) : 0,
+            availableSizes:
+                _availableSizeGroups[id % _availableSizeGroups.length],
+            availableColors:
+                _availableColorGroups[id % _availableColorGroups.length],
+            detailSpecs: {
+              'Chất liệu': id.isEven ? 'Cotton cao cấp' : 'Da tổng hợp',
+              'Phong cách': id.isEven ? 'Casual' : 'Minimal',
+              'Bảo quản': 'Giặt nhẹ, tránh nhiệt cao',
+            },
           );
         }).toList();
       } else {
@@ -158,38 +129,47 @@ class ProductService {
   }
 
   static const List<String> _productNames = [
-    'Sản phẩm gia dụng',
-    'Sản phẩm thời trang',
-    'Sản phẩm làm đẹp',
-    'Sản phẩm công nghệ',
-    'Sản phẩm nhà bếp',
-    'Sản phẩm thể thao',
-    'Sản phẩm chăm sóc cá nhân',
-    'Sản phẩm sức khỏe',
-    'Sản phẩm văn phòng',
-    'Sản phẩm du lịch',
-    'Sản phẩm học tập',
-    'Sản phẩm phụ kiện',
-    'Sản phẩm trang trí',
-    'Sản phẩm quà tặng',
-    'Sản phẩm tiện ích',
-    'Sản phẩm điện tử',
-    'Sản phẩm nhà cửa',
-    'Sản phẩm bền vững',
-    'Sản phẩm cao cấp',
-    'Sản phẩm khuyến mãi',
+    'Áo thun oversize basic',
+    'Áo sơ mi linen tay dài',
+    'Quần jean ống suông',
+    'Chân váy midi xếp ly',
+    'Áo khoác bomber nhẹ',
+    'Đầm midi tay phồng',
+    'Túi đeo vai da mini',
+    'Ví cầm tay khóa kéo',
+    'Kính mát gọng vuông',
+    'Mũ lưỡi trai thêu chữ',
+    'Đồng hồ dây kim loại',
+    'Thắt lưng da bản nhỏ',
   ];
 
   static const List<String> _productColors = [
-    'Đỏ',
-    'Vàng',
+    'Đen',
     'Trắng',
-    'Hồng',
-    'Tím',
+    'Xám',
+    'Đỏ',
+    'Xanh',
+    'Bạc',
+    'Nâu',
     'Cam',
-    'Xanh lá',
-    'Tím nhạt',
+    'Đỏ',
+    'Đen',
+    'Trắng',
   ];
 
-  static const List<String> _productCategories = ['TRANG_TRI', 'THUC_PHAM'];
+  static const List<String> _productCategories = ['THOI_TRANG', 'PHU_KIEN'];
+
+  static const List<List<String>> _availableSizeGroups = [
+    ['S', 'M', 'L', 'XL'],
+    ['28', '29', '30', '31', '32'],
+    ['M', 'L', 'XL'],
+    ['One Size'],
+  ];
+
+  static const List<List<String>> _availableColorGroups = [
+    ['Đen', 'Trắng', 'Xám'],
+    ['Xanh denim', 'Đen', 'Nâu'],
+    ['Be', 'Kem', 'Navy'],
+    ['Đen', 'Nâu', 'Bạc'],
+  ];
 }

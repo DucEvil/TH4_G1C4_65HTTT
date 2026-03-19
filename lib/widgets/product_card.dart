@@ -184,6 +184,21 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
 
+                  const SizedBox(height: 2),
+
+                  Text(
+                    product.quantity > 0
+                        ? 'Còn ${product.quantity} sản phẩm'
+                        : 'Hết hàng',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: product.quantity > 0
+                          ? Colors.green.shade700
+                          : Colors.red.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
                   const SizedBox(height: 6),
 
                   // Giá + nút thêm giỏ
@@ -269,7 +284,3 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
-
-
-
-

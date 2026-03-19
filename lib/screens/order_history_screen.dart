@@ -135,7 +135,7 @@ class OrderHistoryScreen extends StatelessWidget {
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    '${item.flowerName} x${item.quantity} - ${_formatPrice(item.totalPrice)}',
+                    '${item.productName} x${item.quantity} - ${_formatPrice(item.totalPrice)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

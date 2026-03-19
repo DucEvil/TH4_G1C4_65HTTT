@@ -9,12 +9,11 @@ class ApiConfig {
   /// Delay thêm (milliseconds) để test Loading state
   static const int simulatedDelay = 2000;
 
+  /// Bỏ qua gọi ảnh từ Wikipedia (dùng ảnh mặc định/local)
+  static const bool skipWikiImages = false;
+
   /// Thông tin sinh viên - CẬP NHẬT TẠI ĐÂY
   static const String studentName = 'Đỗ Đình Đức';
   static const String studentId = '2351160510';
-  static const String appBarTitle = 'TH3';
+  static const String appBarTitle = 'TH4 - Nhóm G1C4';
 }
-
-
-
-

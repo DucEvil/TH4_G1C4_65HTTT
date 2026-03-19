@@ -5,11 +5,13 @@ import '../models/product_model.dart';
 import '../services/product_service.dart';
 import '../services/cart_service.dart';
 import '../services/favorite_service.dart';
+import '../services/order_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/error_widget.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/product_search_delegate.dart';
 import '../screens/cart_screen.dart';
+import '../screens/order_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _maxPrice;
   int _currentBanner = 0;
   bool _searchBarElevated = false;
+  int _visibleHomeProducts = 8;
+  bool _isLoadingMore = false;
 
   final ScrollController _scrollController = ScrollController();
   final PageController _bannerController = PageController(
@@ -39,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<_BannerItem> _banners = const [
     _BannerItem(
       title: 'Flash Sale 3h',
-      subtitle: 'Deal đồng giá cho mỹ phẩm, thời trang, đồ gia dụng...',
+      subtitle: 'Deal đồng giá cho áo thun, jean, hoodie và phụ kiện',
       badge: 'Siêu ưu đãi',
       icon: Icons.local_offer,
       colors: [Color(0xFFE75A7C), Color(0xFFF48FB1)],
@@ -52,15 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
       colors: [Color(0xFF1E88E5), Color(0xFF64B5F6)],
     ),
     _BannerItem(
-      title: 'Mall Chính Hãng',
-      subtitle: 'Điện thoại và đồ gia dụng cam kết chính hãng',
+      title: 'Fashion Mall Chính Hãng',
+      subtitle: 'Bộ sưu tập quần áo và giày mới nhất trong tuần',
       badge: 'Mall',
       icon: Icons.verified,
       colors: [Color(0xFF00897B), Color(0xFF4DB6AC)],
     ),
     _BannerItem(
-      title: 'Voucher Cuối Tuần',
-      subtitle: 'Thu mã giảm giá và hoàn xu cho mỗi đơn hàng',
+      title: 'Mix & Match Cuối Tuần',
+      subtitle: 'Mua 2 giảm thêm 10% cho phụ kiện và balo',
       badge: 'Hot deal',
       icon: Icons.celebration,
       colors: [Color(0xFFFF7043), Color(0xFFFFAB91)],
@@ -75,51 +79,52 @@ class _HomeScreenState extends State<HomeScreen> {
       filterKey: 'Tất cả',
     ),
     _HomeCategoryItem(
-      label: 'Trang trí',
-      icon: Icons.local_florist_rounded,
+      label: 'Quần áo',
+      icon: Icons.checkroom_rounded,
       color: Color(0xFF43A047),
-      filterKey: 'TRANG_TRI',
-    ),
-    _HomeCategoryItem(
-      label: 'Thực phẩm',
-      icon: Icons.flight_takeoff_rounded,
-      color: Color(0xFF5E35B1),
-      filterKey: 'THUC_PHAM',
+      filterKey: 'THOI_TRANG',
     ),
     _HomeCategoryItem(
       label: 'Phụ kiện',
-      icon: Icons.card_giftcard_rounded,
+      icon: Icons.watch_rounded,
       color: Color(0xFFF4511E),
       filterKey: 'PHU_KIEN',
     ),
     _HomeCategoryItem(
-      label: 'Mỹ phẩm',
-      icon: Icons.spa_rounded,
+      label: 'Áo mới',
+      icon: Icons.dry_cleaning_rounded,
       color: Color(0xFF00897B),
-      filterKey: 'MY_PHAM',
+      filterKey: 'THOI_TRANG',
     ),
     _HomeCategoryItem(
-      label: 'Điện thoại',
-      icon: Icons.smartphone_rounded,
-      color: Color(0xFF1E88E5),
-      filterKey: 'DIEN_THOAI',
-    ),
-    _HomeCategoryItem(
-      label: 'Đồ dùng',
-      icon: Icons.chair_rounded,
+      label: 'Túi xách',
+      icon: Icons.shopping_bag_rounded,
       color: Color(0xFF6D4C41),
-      filterKey: 'DO_DUNG',
+      filterKey: 'PHU_KIEN',
     ),
     _HomeCategoryItem(
-      label: 'Voucher',
-      icon: Icons.confirmation_number_rounded,
+      label: 'Xu hướng',
+      icon: Icons.trending_up_rounded,
       color: Color(0xFFFF8F00),
-      filterKey: 'VOUCHER',
+      filterKey: 'THOI_TRANG',
+    ),
+    _HomeCategoryItem(
+      label: 'Phụ kiện mới',
+      icon: Icons.backpack_rounded,
+      color: Color(0xFF3949AB),
+      filterKey: 'PHU_KIEN',
+    ),
+    _HomeCategoryItem(
+      label: 'Bộ sưu tập',
+      icon: Icons.style_rounded,
+      color: Color(0xFF8E24AA),
+      filterKey: 'THOI_TRANG',
     ),
   ];
 
   final _cart = CartService.instance;
   final _favorite = FavoriteService.instance;
+  final _order = OrderService.instance;
 
   @override
   void initState() {
@@ -129,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollController.addListener(_onScroll);
     _cart.items.addListener(_onCartChanged);
     _favorite.favoriteIds.addListener(_onFavoriteChanged);
+    _order.orders.addListener(_onOrderChanged);
   }
 
   @override
@@ -139,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _bannerController.dispose();
     _cart.items.removeListener(_onCartChanged);
     _favorite.favoriteIds.removeListener(_onFavoriteChanged);
+    _order.orders.removeListener(_onOrderChanged);
     super.dispose();
   }
 
@@ -150,6 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  void _onOrderChanged() {
+    setState(() {});
+  }
+
   void _onScroll() {
     final shouldElevate = _scrollController.offset > 16;
     if (shouldElevate != _searchBarElevated) {
@@ -157,6 +168,31 @@ class _HomeScreenState extends State<HomeScreen> {
         _searchBarElevated = shouldElevate;
       });
     }
+
+    if (_isLoadingMore) return;
+    if (!_scrollController.hasClients) return;
+
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final current = _scrollController.position.pixels;
+    if (maxExtent - current < 280) {
+      _loadMoreHomeProducts();
+    }
+  }
+
+  Future<void> _loadMoreHomeProducts() async {
+    if (_isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    setState(() {
+      _visibleHomeProducts += 8;
+      _isLoadingMore = false;
+    });
   }
 
   void _startBannerAutoPlay() {
@@ -174,6 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadProducts() {
     setState(() {
+      _visibleHomeProducts = 8;
       _productsFuture = ProductService.fetchProducts();
     });
   }
@@ -181,6 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _refreshProducts() async {
     final future = ProductService.fetchProducts();
     setState(() {
+      _visibleHomeProducts = 8;
       _productsFuture = future;
     });
     await future;
@@ -203,13 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _matchesCategory(Product product, String categoryKey) {
     switch (categoryKey) {
-      case 'TRANG_TRI':
-      case 'THUC_PHAM':
+      case 'THOI_TRANG':
       case 'PHU_KIEN':
-      case 'MY_PHAM':
-      case 'DIEN_THOAI':
-      case 'DO_DUNG':
-      case 'VOUCHER':
         return product.category == categoryKey;
       default:
         return product.category == categoryKey;
@@ -315,10 +348,16 @@ class _HomeScreenState extends State<HomeScreen> {
           : _currentIndex == 1
           ? _buildCategoryBody(primaryColor, theme)
           : _currentIndex == 2
-          ? const CartScreen()
+          ? CartScreen(
+              onCheckoutCompleted: () {
+                setState(() {
+                  _currentIndex = 0;
+                });
+              },
+            )
           : _currentIndex == 3
           ? _buildFavoriteBody(primaryColor, theme)
-          : _buildPlaceholderPage(_getPageInfo(_currentIndex)),
+          : const OrderHistoryScreen(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -337,13 +376,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           NavigationDestination(
             icon: Badge(
-              isLabelVisible: _cart.totalItems > 0,
-              label: Text('${_cart.totalItems}'),
+              isLabelVisible: _cart.totalDistinctItems > 0,
+              label: Text('${_cart.totalDistinctItems}'),
               child: const Icon(Icons.shopping_cart_outlined),
             ),
             selectedIcon: Badge(
-              isLabelVisible: _cart.totalItems > 0,
-              label: Text('${_cart.totalItems}'),
+              isLabelVisible: _cart.totalDistinctItems > 0,
+              label: Text('${_cart.totalDistinctItems}'),
               child: const Icon(Icons.shopping_cart),
             ),
             label: 'Giỏ hàng',
@@ -361,10 +400,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             label: 'Yêu thích',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Tài khoản',
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: _order.orders.value.isNotEmpty,
+              label: Text('${_order.orders.value.length}'),
+              child: const Icon(Icons.receipt_long_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: _order.orders.value.isNotEmpty,
+              label: Text('${_order.orders.value.length}'),
+              child: const Icon(Icons.receipt_long),
+            ),
+            label: 'Đơn mua',
           ),
         ],
       ),
@@ -408,6 +455,11 @@ class _HomeScreenState extends State<HomeScreen> {
           final filteredProducts = _applyPriceFilter(
             _filterByCategory(allProducts, _selectedCategory),
           );
+          final visibleCount = filteredProducts.length < _visibleHomeProducts
+              ? filteredProducts.length
+              : _visibleHomeProducts;
+          final visibleProducts = filteredProducts.take(visibleCount).toList();
+          final canLoadMore = visibleProducts.length < filteredProducts.length;
 
           return RefreshIndicator(
             onRefresh: _refreshProducts,
@@ -457,30 +509,46 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
                   sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return ProductCard(
-                        product: filteredProducts[index],
-                        isFavorite: _favorite.isFavorite(
-                          filteredProducts[index].id,
-                        ),
-                        onToggleFavorite: () =>
-                            _toggleFavorite(filteredProducts[index]),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(
-                              product: filteredProducts[index],
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index >= visibleProducts.length) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+
+                        return ProductCard(
+                          product: visibleProducts[index],
+                          isFavorite: _favorite.isFavorite(
+                            visibleProducts[index].id,
+                          ),
+                          onToggleFavorite: () =>
+                              _toggleFavorite(visibleProducts[index]),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(
+                                product: visibleProducts[index],
+                              ),
                             ),
                           ),
-                        ),
-                        onAddToCart: () {
-                          _cart.addToCart(filteredProducts[index]);
-                          _showSnackBar(
-                            'Đã thêm ${filteredProducts[index].name} vào giỏ',
-                          );
-                        },
-                      );
-                    }, childCount: filteredProducts.length),
+                          onAddToCart: () {
+                            _cart.addToCart(visibleProducts[index]);
+                            _showSnackBar(
+                              'Đã thêm ${visibleProducts[index].name} vào giỏ',
+                            );
+                          },
+                        );
+                      },
+                      childCount:
+                          visibleProducts.length + (canLoadMore ? 1 : 0),
+                    ),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
@@ -691,7 +759,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           icon: Badge(
             isLabelVisible: _cart.items.value.isNotEmpty,
-            label: Text('${_cart.items.value.length}'),
+            label: Text('${_cart.totalDistinctItems}'),
             child: const Icon(Icons.shopping_cart_outlined),
           ),
         ),
@@ -977,44 +1045,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
-  }
-
-  // --- Placeholder pages (Danh mục, Giỏ hàng, Yêu thích, Tài khoản) ---
-  Widget _buildPlaceholderPage((IconData, String, String) info) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(info.$1, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            info.$2,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(info.$3, style: TextStyle(color: Colors.grey.shade400)),
-        ],
-      ),
-    );
-  }
-
-  (IconData, String, String) _getPageInfo(int index) {
-    switch (index) {
-      case 1:
-        return (Icons.category, 'Danh mục', '');
-      case 2:
-        return (Icons.shopping_cart, 'Giỏ hàng', 'Chưa có sản phẩm trong giỏ');
-      case 3:
-        return (Icons.favorite, 'Yêu thích', '');
-      case 4:
-        return (Icons.person, 'Tài khoản', 'Đăng nhập để tiếp tục');
-      default:
-        return (Icons.home, 'Trang chủ', '');
-    }
   }
 }
 
