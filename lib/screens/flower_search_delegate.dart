@@ -75,7 +75,7 @@ class FlowerSearchDelegate extends SearchDelegate<Flower?> {
                 f.color.toLowerCase().contains(q);
           }).toList();
 
-    if (results.isEmpty) {
+    if (results.isEmpty) {sádcdswwsdfcfds
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
