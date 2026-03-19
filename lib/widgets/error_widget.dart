@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class ErrorDisplayWidget extends StatelessWidget {
   final String error;
@@ -114,3 +114,7 @@ class ErrorDisplayWidget extends StatelessWidget {
     );
   }
 }
+
+
+
+

@@ -8,7 +8,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
     <application
-        android:label="flutter_application_2"
+        android:label="TH4_G1C4_65HTTT"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

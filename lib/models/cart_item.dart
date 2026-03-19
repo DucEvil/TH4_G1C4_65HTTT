@@ -1,10 +1,13 @@
-import 'flower_model.dart';
+﻿import 'product_model.dart';
 
 class CartItem {
-  final Flower flower;
+  final Product product;
   int quantity;
 
-  CartItem({required this.flower, this.quantity = 1});
+  CartItem({required this.product, this.quantity = 1});
 
-  double get totalPrice => flower.price * quantity;
+  double get totalPrice => product.price * quantity;
 }
+
+
+

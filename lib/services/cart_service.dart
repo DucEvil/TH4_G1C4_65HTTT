@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
-import '../models/flower_model.dart';
+﻿import 'package:flutter/foundation.dart';
+import '../models/product_model.dart';
 import '../models/cart_item.dart';
 
 class CartService {
@@ -13,38 +13,30 @@ class CartService {
   double get totalPrice =>
       items.value.fold(0.0, (sum, item) => sum + item.totalPrice);
 
-  void addToCart(Flower flower) {
-    addToCartWithQuantity(flower, 1);
-  }
-
-  void addToCartWithQuantity(Flower flower, int quantity) {
-    if (quantity <= 0) {
-      return;
-    }
-
+  void addToCart(Product product) {
     final list = List<CartItem>.from(items.value);
-    final index = list.indexWhere((item) => item.flower.id == flower.id);
+    final index = list.indexWhere((item) => item.product.id == product.id);
     if (index >= 0) {
-      list[index].quantity += quantity;
+      list[index].quantity++;
     } else {
-      list.add(CartItem(flower: flower, quantity: quantity));
+      list.add(CartItem(product: product));
     }
     items.value = list;
   }
 
-  void removeFromCart(int flowerId) {
+  void removeFromCart(int productId) {
     final list = List<CartItem>.from(items.value);
-    list.removeWhere((item) => item.flower.id == flowerId);
+    list.removeWhere((item) => item.product.id == productId);
     items.value = list;
   }
 
-  void updateQuantity(int flowerId, int quantity) {
+  void updateQuantity(int productId, int quantity) {
     if (quantity <= 0) {
-      removeFromCart(flowerId);
+      removeFromCart(productId);
       return;
     }
     final list = List<CartItem>.from(items.value);
-    final index = list.indexWhere((item) => item.flower.id == flowerId);
+    final index = list.indexWhere((item) => item.product.id == productId);
     if (index >= 0) {
       list[index].quantity = quantity;
       items.value = list;
@@ -54,11 +46,7 @@ class CartService {
   void clearCart() {
     items.value = [];
   }
-
-  void removeItemsByFlowerIds(List<int> flowerIds) {
-    final setIds = flowerIds.toSet();
-    final list = List<CartItem>.from(items.value);
-    list.removeWhere((item) => setIds.contains(item.flower.id));
-    items.value = list;
-  }
 }
+
+
+
